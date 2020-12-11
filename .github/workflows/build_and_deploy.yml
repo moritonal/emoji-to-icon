@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "main"
+    tags:
+      - "**"
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2.1.2
+        with:
+          check-latest: true
+      
+      - name: npm install 🏗
+        run: npm install
+      
+      - name: npm build 🏭
+        run: npm run build
+
+      - name: npm publish 🚀
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
