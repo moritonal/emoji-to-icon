@@ -1,0 +1,42 @@
+{
+  "name": "emoji-to-icon",
+  "version": "1.0.0",
+  "description": "Renders an emoji to a series of sized PNGs",
+  "main": "dist/index.js",
+  "files": [
+    "dist/**",
+    "fonts/**"
+  ],
+  "bin": {
+    "emoji-to-icon": "./dist/index.js"
+  },
+  "dependencies": {
+    "@types/yargs": "^15.0.11",
+    "canvas": "^2.6.1",
+    "fontkit": "^1.8.1",
+    "yargs": "^16.2.0"
+  },
+  "devDependencies": {
+    "@types/fontkit": "^1.8.0",
+    "@types/node": "^14.14.12"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/moritonal/emoji-to-icon.git"
+  },
+  "keywords": [
+    "emoji",
+    "png",
+    "icon",
+    "icons"
+  ],
+  "author": "Tom Bonner",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/moritonal/emoji-to-icon/issues"
+  },
+  "homepage": "https://github.com/moritonal/emoji-to-icon#readme"
+}
