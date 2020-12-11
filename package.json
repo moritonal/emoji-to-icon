@@ -1,6 +1,6 @@
 {
   "name": "emoji-to-icon",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Renders an emoji into PNGs",
   "main": "dist/index.js",
   "files": [
