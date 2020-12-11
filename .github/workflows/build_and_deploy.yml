@@ -18,6 +18,7 @@ jobs:
         uses: actions/setup-node@v2.1.2
         with:
           check-latest: true
+          registry-url: 'https://registry.npmjs.org'
       
       - name: npm install 🏗
         run: npm install
