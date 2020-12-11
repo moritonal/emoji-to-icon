@@ -171,7 +171,7 @@ function Main(config) {
                 case 0:
                     _b.trys.push([0, 3, , 4]);
                     return [4 /*yield*/, new Promise(function (res, rej) {
-                            fontkit.open('./fonts/NotoEmoji-Regular.ttf', null, function (e, font) {
+                            fontkit.open(path_1.join(__dirname, '../fonts/NotoEmoji-Regular.ttf'), null, function (e, font) {
                                 if (e == null) {
                                     res(font);
                                 }

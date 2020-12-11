@@ -132,7 +132,7 @@ async function Main(config: GroupEmojiToIconConfig) {
     try {
         const font: fontkit.Font = await new Promise((res, rej) => {
 
-            (fontkit as any).open('./fonts/NotoEmoji-Regular.ttf', null, (e: Error, font: fontkit.Font) => {
+            (fontkit as any).open(join(__dirname, '../fonts/NotoEmoji-Regular.ttf'), null, (e: Error, font: fontkit.Font) => {
 
                 if (e == null) {
                     res(font);
