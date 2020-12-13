@@ -118,12 +118,13 @@ async function RenderEmoji(font: fontkit.Font, config: InduvidualEmojiToIconConf
     return new Promise<void>((res, rej) => {
 
         out.on("error", (e) => {
+            console.error(`Fail to render "${config.emoji}" into "${outFile}" with "${Math.round(padding)}px" of padding`);
             rej(e);
         });
 
         out.on("finish", () => {
             res();
-            console.log(`Rendered "${config.emoji}" into "${outFile}" with "${Math.round(padding)}px" of padding`)
+            console.log(`Rendered "${config.emoji}" into "${outFile}" with "${Math.round(padding)}px" of padding`);
         });
     });
 }
