@@ -4,6 +4,8 @@ import * as fs from "fs"
 import * as fontkit from "fontkit"
 import * as Canvas from "canvas";
 import { join } from "path"
+import { parse } from "twemoji";
+import { parseString } from "xml2js"
 
 class BaseEmojiToIconConfig {
     emoji: string
@@ -39,45 +41,165 @@ function parsePadding(config: InduvidualEmojiToIconConfig) {
     }
 }
 
-async function RenderEmoji(font: fontkit.Font, config: InduvidualEmojiToIconConfig): Promise<void> {
+class Emoji {
+
+    Render(ctx: Canvas.CanvasRenderingContext2D) {
+
+    }
+
+    get Width() {
+
+        return -1;
+    }
+
+    get Height() {
+
+        return -1;
+    }
+}
+
+class FontKitEmoji extends Emoji {
+
+    glyph: fontkit.Glyph;
+
+    constructor(glyph: fontkit.Glyph) {
+        super();
+
+        this.glyph = glyph;
+    }
+
+    Render(ctx: Canvas.CanvasRenderingContext2D) {
+
+        ctx.fillStyle = "White";
+        var path = this.glyph.path.translate(
+            -this.glyph.bbox.minX,
+            -this.glyph.bbox.minY);
+
+        // For some reason they render upside-down
+        ctx.translate(0, this.Height);
+        ctx.scale(1, -1);
+
+        // Render the Emoji
+        const func = path.toFunction();
+        ctx.beginPath();
+        func(ctx);
+        ctx.fill();
+    }
+
+    get Width() {
+
+        return this.glyph.bbox.maxX - this.glyph.bbox.minX;
+    }
+
+    get Height() {
+
+        return this.glyph.bbox.maxX - this.glyph.bbox.minX;
+    }
+}
+
+class TwitterEmoji extends Emoji {
+
+    image: Canvas.Image;
+
+    constructor(image: Canvas.Image) {
+        super();
+        this.image = image;
+    }
+
+    Render(ctx: Canvas.CanvasRenderingContext2D) {
+        ctx.drawImage(this.image, 0, 0);
+    }
+
+    get Width() {
+
+        return this.image.width;
+    }
+
+    get Height() {
+
+        return this.image.height;
+    }
+}
+async function GetTwitterEmoji(emoji: string): Promise<Emoji> {
+
+    console.log(`Using twemoji (Twitter) to find "${emoji}" graphic`);
+
+    var twitterHtml = parse(emoji);
+
+    var xmlAsJs: any = await new Promise((res, rej) => {
+        parseString(twitterHtml, (e, result) => {
+            if (e) {
+                console.error(`Twemoji could not parse the emoji correctly!`);
+                rej(e);
+            }
+            else {
+                res(result);
+            }
+        });
+    });
+
+    const emojiSrc = xmlAsJs.img.$.src;
+
+    return await new Promise((res, rej) => {
+
+        const img = new Canvas.Image();
+
+        img.onload = () => res(new TwitterEmoji(img));
+
+        img.onerror = err => {
+            console.error(`Could not download emoji from twitter CDN!`, err);
+            rej(err);
+        }
+
+        img.src = emojiSrc
+    });
+}
+
+async function GetEmoji(font: fontkit.Font, emoji: string): Promise<Emoji> {
+
+    const run = font.layout(emoji);
+
+    if (run.glyphs.length == 0) {
+
+        console.warn("Could not find Emoji");
+
+        return null;
+    }
+
+    var validGlyphs = run.glyphs.filter(glyph => {
+        return [
+            glyph.codePoints.every(codepoint => codepoint > 32),
+            glyph.id !== 0
+        ].every(i => i)
+    });
+
+    if (validGlyphs.length == 0) {
+
+        console.warn(`Could not find "${emoji}" emoji within the tools font library`);
+
+        return null;
+    }
+
+    const glyph = validGlyphs[0];
+
+    return new FontKitEmoji(glyph);
+}
+
+async function RenderEmoji(emoji: Emoji, config: InduvidualEmojiToIconConfig): Promise<void> {
 
     if (typeof config.size != "number") {
         throw "config.size must be a number";
     }
 
-    const run = font.layout(config.emoji);
-
-    if (run.glyphs.length == 0) {
-        console.log("Could not find Emoji");
-        return
-    }
-
-    const glyph = run.glyphs[0];
-
-    const width = glyph.bbox.maxX - glyph.bbox.minX;
-    const height = glyph.bbox.maxY - glyph.bbox.minY;
+    const width = emoji.Width;
+    const height = emoji.Height;
 
     const canvas = new Canvas.Canvas(
         width,
         height);
 
-    const ctx = canvas.getContext("2d");
-
-    ctx.fillStyle = "White";
-
-    var path = glyph.path.translate(
-        -glyph.bbox.minX,
-        -glyph.bbox.minY);
-
-    // For some reason they render upside-down
-    ctx.translate(0, height);
-    ctx.scale(1, -1);
-
-    // Render the Emoji
-    const func = path.toFunction();
-    ctx.beginPath();
-    func(ctx);
-    ctx.fill();
+    // Render the emoji onto our canvas
+    emoji.Render(canvas.getContext("2d"));
 
     const desiredSize = config.size;
     const padding = parsePadding(config);
@@ -91,12 +213,12 @@ async function RenderEmoji(font: fontkit.Font, config: InduvidualEmojiToIconConf
     const outputWidth = width * ratio;
     const outputHeight = height * ratio;
 
-    const offsetWidth = (outputSize - outputWidth) / 2.0;
-    const offsetHeight = (outputSize - outputHeight) / 2.0;
-
     const outputCanvas = new Canvas.Canvas(
         outputSize + padding,
         outputSize + padding);
+
+    const offsetWidth = (outputSize - outputWidth) / 2.0;
+    const offsetHeight = (outputSize - outputHeight) / 2.0;
 
     const outputCtx = outputCanvas.getContext("2d");
     outputCtx.drawImage(canvas,
@@ -131,6 +253,7 @@ async function RenderEmoji(font: fontkit.Font, config: InduvidualEmojiToIconConf
 
 async function Main(config: GroupEmojiToIconConfig) {
     try {
+
         const font: fontkit.Font = await new Promise((res, rej) => {
 
             (fontkit as any).open(join(__dirname, '../fonts/NotoEmoji-Regular.ttf'), null, (e: Error, font: fontkit.Font) => {
@@ -144,11 +267,13 @@ async function Main(config: GroupEmojiToIconConfig) {
             });
         });
 
+        const emoji = await GetEmoji(font, config.emoji) || await GetTwitterEmoji(config.emoji)
+
         var tasks: Promise<void>[] = [];
 
         for (var key of config.size) {
 
-            tasks.push(RenderEmoji(font, {
+            tasks.push(RenderEmoji(emoji, {
                 ...config,
                 size: key
             }));

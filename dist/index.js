@@ -65,6 +65,8 @@ var fs = require("fs");
 var fontkit = require("fontkit");
 var Canvas = require("canvas");
 var path_1 = require("path");
+var twemoji_1 = require("twemoji");
+var xml2js_1 = require("xml2js");
 var BaseEmojiToIconConfig = /** @class */ (function () {
     function BaseEmojiToIconConfig() {
     }
@@ -101,43 +103,171 @@ function parsePadding(config) {
         throw "config.padding is not a number or string";
     }
 }
-function RenderEmoji(font, config) {
+var Emoji = /** @class */ (function () {
+    function Emoji() {
+    }
+    Emoji.prototype.Render = function (ctx) {
+    };
+    Object.defineProperty(Emoji.prototype, "Width", {
+        get: function () {
+            return -1;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Emoji.prototype, "Height", {
+        get: function () {
+            return -1;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return Emoji;
+}());
+var FontKitEmoji = /** @class */ (function (_super) {
+    __extends(FontKitEmoji, _super);
+    function FontKitEmoji(glyph) {
+        var _this = _super.call(this) || this;
+        _this.glyph = glyph;
+        return _this;
+    }
+    FontKitEmoji.prototype.Render = function (ctx) {
+        ctx.fillStyle = "White";
+        var path = this.glyph.path.translate(-this.glyph.bbox.minX, -this.glyph.bbox.minY);
+        // For some reason they render upside-down
+        ctx.translate(0, this.Height);
+        ctx.scale(1, -1);
+        // Render the Emoji
+        var func = path.toFunction();
+        ctx.beginPath();
+        func(ctx);
+        ctx.fill();
+    };
+    Object.defineProperty(FontKitEmoji.prototype, "Width", {
+        get: function () {
+            return this.glyph.bbox.maxX - this.glyph.bbox.minX;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(FontKitEmoji.prototype, "Height", {
+        get: function () {
+            return this.glyph.bbox.maxX - this.glyph.bbox.minX;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return FontKitEmoji;
+}(Emoji));
+var TwitterEmoji = /** @class */ (function (_super) {
+    __extends(TwitterEmoji, _super);
+    function TwitterEmoji(image) {
+        var _this = _super.call(this) || this;
+        _this.image = image;
+        return _this;
+    }
+    TwitterEmoji.prototype.Render = function (ctx) {
+        ctx.drawImage(this.image, 0, 0);
+    };
+    Object.defineProperty(TwitterEmoji.prototype, "Width", {
+        get: function () {
+            return this.image.width;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(TwitterEmoji.prototype, "Height", {
+        get: function () {
+            return this.image.height;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return TwitterEmoji;
+}(Emoji));
+function GetTwitterEmoji(emoji) {
     return __awaiter(this, void 0, void 0, function () {
-        var run, glyph, width, height, canvas, ctx, path, func, desiredSize, padding, ratio, outputSize, outputWidth, outputHeight, offsetWidth, offsetHeight, outputCanvas, outputCtx, outFile, out, stream;
+        var twitterHtml, xmlAsJs, emojiSrc;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    console.log("Using twemoji (Twitter) to find \"" + emoji + "\" graphic");
+                    twitterHtml = twemoji_1.parse(emoji);
+                    return [4 /*yield*/, new Promise(function (res, rej) {
+                            xml2js_1.parseString(twitterHtml, function (e, result) {
+                                if (e) {
+                                    console.error("Twemoji could not parse the emoji correctly!");
+                                    rej(e);
+                                }
+                                else {
+                                    res(result);
+                                }
+                            });
+                        })];
+                case 1:
+                    xmlAsJs = _a.sent();
+                    emojiSrc = xmlAsJs.img.$.src;
+                    return [4 /*yield*/, new Promise(function (res, rej) {
+                            var img = new Canvas.Image();
+                            img.onload = function () { return res(new TwitterEmoji(img)); };
+                            img.onerror = function (err) {
+                                console.error("Could not download emoji from twitter CDN!", err);
+                                rej(err);
+                            };
+                            img.src = emojiSrc;
+                        })];
+                case 2: return [2 /*return*/, _a.sent()];
+            }
+        });
+    });
+}
+function GetEmoji(font, emoji) {
+    return __awaiter(this, void 0, void 0, function () {
+        var run, validGlyphs, glyph;
+        return __generator(this, function (_a) {
+            run = font.layout(emoji);
+            if (run.glyphs.length == 0) {
+                console.warn("Could not find Emoji");
+                return [2 /*return*/, null];
+            }
+            validGlyphs = run.glyphs.filter(function (glyph) {
+                return [
+                    glyph.codePoints.every(function (codepoint) { return codepoint > 32; }),
+                    glyph.id !== 0
+                ].every(function (i) { return i; });
+            });
+            if (validGlyphs.length == 0) {
+                console.warn("Could not find \"" + emoji + "\" emoji within the tools font library");
+                return [2 /*return*/, null];
+            }
+            glyph = validGlyphs[0];
+            return [2 /*return*/, new FontKitEmoji(glyph)];
+        });
+    });
+}
+function RenderEmoji(emoji, config) {
+    return __awaiter(this, void 0, void 0, function () {
+        var width, height, canvas, desiredSize, padding, ratio, outputSize, outputWidth, outputHeight, outputCanvas, offsetWidth, offsetHeight, outputCtx, outFile, out, stream;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     if (typeof config.size != "number") {
                         throw "config.size must be a number";
                     }
-                    run = font.layout(config.emoji);
-                    if (run.glyphs.length == 0) {
-                        console.log("Could not find Emoji");
-                        return [2 /*return*/];
-                    }
-                    glyph = run.glyphs[0];
-                    width = glyph.bbox.maxX - glyph.bbox.minX;
-                    height = glyph.bbox.maxY - glyph.bbox.minY;
+                    width = emoji.Width;
+                    height = emoji.Height;
                     canvas = new Canvas.Canvas(width, height);
-                    ctx = canvas.getContext("2d");
-                    ctx.fillStyle = "White";
-                    path = glyph.path.translate(-glyph.bbox.minX, -glyph.bbox.minY);
-                    // For some reason they render upside-down
-                    ctx.translate(0, height);
-                    ctx.scale(1, -1);
-                    func = path.toFunction();
-                    ctx.beginPath();
-                    func(ctx);
-                    ctx.fill();
+                    // Render the emoji onto our canvas
+                    emoji.Render(canvas.getContext("2d"));
                     desiredSize = config.size;
                     padding = parsePadding(config);
                     ratio = desiredSize / Math.max(width, height);
                     outputSize = Math.max(width, height) * ratio;
                     outputWidth = width * ratio;
                     outputHeight = height * ratio;
+                    outputCanvas = new Canvas.Canvas(outputSize + padding, outputSize + padding);
                     offsetWidth = (outputSize - outputWidth) / 2.0;
                     offsetHeight = (outputSize - outputHeight) / 2.0;
-                    outputCanvas = new Canvas.Canvas(outputSize + padding, outputSize + padding);
                     outputCtx = outputCanvas.getContext("2d");
                     outputCtx.drawImage(canvas, 0, 0, width, height, offsetWidth + (padding / 2), offsetHeight + (padding / 2), outputWidth, outputHeight);
                     outFile = path_1.join(config.outDir, outputSize + "x" + outputSize + ".png");
@@ -152,6 +282,7 @@ function RenderEmoji(font, config) {
                     stream.pipe(out);
                     return [2 /*return*/, new Promise(function (res, rej) {
                             out.on("error", function (e) {
+                                console.error("Fail to render \"" + config.emoji + "\" into \"" + outFile + "\" with \"" + Math.round(padding) + "px\" of padding");
                                 rej(e);
                             });
                             out.on("finish", function () {
@@ -165,11 +296,11 @@ function RenderEmoji(font, config) {
 }
 function Main(config) {
     return __awaiter(this, void 0, void 0, function () {
-        var font, tasks, _i, _a, key, e_1;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var font, emoji, _a, tasks, _i, _b, key, e_1;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
-                    _b.trys.push([0, 3, , 4]);
+                    _c.trys.push([0, 6, , 7]);
                     return [4 /*yield*/, new Promise(function (res, rej) {
                             fontkit.open(path_1.join(__dirname, '../fonts/NotoEmoji-Regular.ttf'), null, function (e, font) {
                                 if (e == null) {
@@ -181,21 +312,31 @@ function Main(config) {
                             });
                         })];
                 case 1:
-                    font = _b.sent();
+                    font = _c.sent();
+                    return [4 /*yield*/, GetEmoji(font, config.emoji)];
+                case 2:
+                    _a = (_c.sent());
+                    if (_a) return [3 /*break*/, 4];
+                    return [4 /*yield*/, GetTwitterEmoji(config.emoji)];
+                case 3:
+                    _a = (_c.sent());
+                    _c.label = 4;
+                case 4:
+                    emoji = _a;
                     tasks = [];
-                    for (_i = 0, _a = config.size; _i < _a.length; _i++) {
-                        key = _a[_i];
-                        tasks.push(RenderEmoji(font, __assign(__assign({}, config), { size: key })));
+                    for (_i = 0, _b = config.size; _i < _b.length; _i++) {
+                        key = _b[_i];
+                        tasks.push(RenderEmoji(emoji, __assign(__assign({}, config), { size: key })));
                     }
                     return [4 /*yield*/, Promise.all(tasks)];
-                case 2:
-                    _b.sent();
-                    return [3 /*break*/, 4];
-                case 3:
-                    e_1 = _b.sent();
+                case 5:
+                    _c.sent();
+                    return [3 /*break*/, 7];
+                case 6:
+                    e_1 = _c.sent();
                     console.warn(e_1);
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
+                    return [3 /*break*/, 7];
+                case 7: return [2 /*return*/];
             }
         });
     });
