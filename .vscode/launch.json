@@ -7,10 +7,25 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
+            "name": "Launch Program (Difficult Emoji)",
             "skipFiles": [
                 "<node_internals>/**"
             ],
+            "args": ["--emoji", "🦔", "--size", "90", "--size", "120", "--padding", "13%", "--outDir", "./test"],
+            "program": "${workspaceFolder}/index.ts",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": [
+                "${workspaceFolder}/dist/**/*.js"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Program (Good Emoji)",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "args": ["--emoji", "‍🐳", "--size", "90", "--size", "120", "--padding", "13%", "--outDir", "./test"],
             "program": "${workspaceFolder}/index.ts",
             "preLaunchTask": "tsc: build - tsconfig.json",
             "outFiles": [
