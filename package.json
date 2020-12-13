@@ -1,6 +1,6 @@
 {
   "name": "emoji-to-icon",
-  "version": "1.0.7",
+  "version": "1.1.7",
   "description": "Renders an emoji into PNGs",
   "main": "dist/index.js",
   "files": [
@@ -11,14 +11,18 @@
     "emoji-to-icon": "./dist/index.js"
   },
   "dependencies": {
-    "@types/yargs": "^15.0.11",
     "canvas": "^2.6.1",
     "fontkit": "^1.8.1",
+    "twemoji": "^13.0.1",
+    "xml2js": "^0.4.23",
     "yargs": "^16.2.0"
   },
   "devDependencies": {
     "@types/fontkit": "^1.8.0",
-    "@types/node": "^14.14.12"
+    "@types/node": "^14.14.12",
+    "@types/twemoji": "^12.1.1",
+    "@types/xml2js": "^0.4.7",
+    "@types/yargs": "^15.0.11"
   },
   "scripts": {
     "build": "tsc"
