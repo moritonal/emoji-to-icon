@@ -19,15 +19,17 @@ Examples:
   "./test"                                  ./test dir
   ```
 
+Which results in a PNG which can be then used as a icon, as can be seen [here](https://moritonal.github.io/mermaid-live/).
+
 # FAQ
 
 ## Why can you not find an emoji but can render it in the console!
 
-This tool uses the `NotoEmoji-Regular` font which is open-source from Google. Sometimes this is out of sync with the licensed fonts installed in your console.
+This tool uses the `NotoEmoji-Regular` font which is open-source from Google. The issue is that we have to use the five-year old black & white library rather than the latest version. This is likely out of sync with the licensed fonts installed in your console.
 
 ## Whats Twitter got to do with this?
 
-If the tool cannot find an emoji witihn it's font (which is five years old now) then it uses twemoji to download a png of the emoji from a CDN.
+If the tool cannot find an emoji witihn it's font (which is five years old now) then it uses `twemoji` to download a png of the emoji from a CDN.
 
 ## Why not use the latest `NotoColorEmoji.tff`?
 
